@@ -1,0 +1,208 @@
+#################################
+# Cache de Respostas de API/CONSULTAS SQL
+#################################
+
+
+# Armazena a resposta da API em cache
+FLUSHALL
+SET api_response:users "{'users': ['Bruce', 'Clark']}"
+GET api_response:users
+
+
+# Define o TTL de 60 seggundos para a chave
+TTL api_response:users
+EXPIRE api_response:users 60
+TTL api_response:users
+
+
+# AO RODAR NOVAMENTE, "Reseta" o TTL
+EXPIRE api_response:users 10
+TTL api_response:users
+
+
+# CHECAR SE A CHAVE FOI REMOVIDA APÓS O TTL ACABAR
+GET api_response:users
+
+
+#################################
+# Gerenciamento de sessões de usuários
+#################################
+
+
+# Armazena a sessão do usuário com um TTL de 30 minutos (1800 segundos)
+SET session:user1234 "session_data"
+
+
+# Define um TTL de 1800 segundos (30 minutos) para a chave
+# Se um usuário estiver inativo por 30 minutos, sua sessão sera removida automaticamente
+EXPIRE session:user1234 1800
+
+
+
+#################################
+# Limite de taxa (Rate Limiting)
+#################################
+
+
+# O TTL pode ser usado para implementar um sistema de Rate Limiting,
+onde você deseja limitar o número de requisições que um usuário pode fazer em um determinado período.
+SET requests:user1234 1
+GET requests:user1234
+
+
+# Incrementa o contador de requisições do usuário
+GET requests:user1234
+INCR requests:user1234
+GET requests:user1234
+
+
+# Define um TTL de 60 segundos para o contador
+# Se o valor do contador exceder um determinado limite, você pode bloquear ou limitar temporariamente o usuário em um determinado período.
+EXPIRE requests:user1234 10
+TTL requests:user1234
+
+
+#################################
+# Dados temporarios
+#################################
+
+
+# Armazena um código de verificação com um TTL de 5 minutos
+SET verification_code:user1234 "123456"
+GET verification_code:user1234
+
+
+# Define um TTL de 300 segundos (5 minutos) para a chave
+# Após 5 minutos, o código de verificação será automaticamente removido,
+garantindo que ele só possa ser usado dentro desse período
+EXPIRE verification_code:user1234 300
+TTL verification_code:user1234
+
+
+
+#################################
+# Paginação de Resultados
+#################################
+
+
+
+# Armazena uma página de resultado de busca
+SET search_results:page1 "{'results': ['search1', 'search2']}"
+GET search_results:page1
+
+
+# Define um TTL de 600 segundos (10 minutos) para a chave
+# Isso garante que os resultados de busca não sejam mantidos por tempo indeterminado, economizando espaço de armazenamento
+EXPIRE search_results:page1 600
+TTL search_results:page1
+
+
+#################################
+# EXPIRE
+#################################
+
+# Além do EXPIRE, você pode usar o comando TTL para verificar quanto tempo resta antes que uma chave expire:
+
+# PARAMETROS
+# NX -- Set expiry only when the key has no expiry
+# XX -- Set expiry only when the key has an existing expiry
+# GT -- Set expiry only when the new expiry is greater than current one
+# LT -- Set expiry only when the new expiry is less than current one
+
+# Insere uma chave e checa o TTL (A chave ainda não tem TTL neste caso)
+set key10 "Infos Data 01"
+get key10
+TTL key10
+
+# Seta a expiração apenas quando ja existe um TTL (não é o caso dessa chave, pois ela ainda não tem TTL, então não vai setar o TTL)
+EXPIRE key10 10 XX
+TTL key10
+
+# Seta a expiração quando é p/ configurar um novo TTL (como a chave ainda não tinha TTL, o comando vai setar um novo TTL)
+del key10
+set key10 "INfos Data 01"
+
+EXPIRE key10 45 NX
+TTL key10
+DEL key10
+
+
+#################################
+# Inscrever consumidor 1
+#################################
+
+redis-cli localhost -p 6380
+SUBSCRIBE task_updates
+
+fazer um publish:
+PUBLISH task_updates "TAREFA 123 foi atualizada."
+
+
+#################################
+# Checar Path do arquivo de configuração do Redis
+#################################
+
+# config_file:/opt/homebrew/etc/redis.conf
+redis-cli INFO
+redis-cli INFO | grep config_file
+
+
+# REINICIAR REDIS
+brew services stop redis
+
+
+# CRIAR PASTAS
+
+cd ~/downloads
+mkdir redis-replication
+cd redis-replication
+mkdir master replica1 replica2
+ls -lrth
+
+# COPIAR ARQUIVOS DE CONFIGURAÇÃO   
+sudo cp /etc/redis/redis.conf ~/Downloads/redis-replication/master/redis-master.conf
+sudo cp /etc/redis/redis.conf ~/Downloads/redis-replication/replica1/redis-replica1.conf
+sudo cp /etc/redis/redis.conf ~/Downloads/redis-replication/replica2/redis-replica2.conf
+
+
+# DATA DIRECTORY
+mkdir -p ~/redis-replication/{master,replica1,replica2}
+
+# 6231 MASTER
+# 6232 slave
+# 6233 slave
+
+# MASTER
+nano ~/Downloads/redis-replication/master/redis-master.conf
+
+port 6231
+dir /home/dev/redis-replication/master
+logfile /home/dev/redis-replication/master/redis-master.log
+
+# PORT 6232
+# REPLICA1
+nano ~/Downloads/redis-replication/replica1/redis-replica1.conf
+dir /home/dev/redis-replication/replica1
+logfile /home/dev/redis-replication/replica1/redis-replica1.log
+
+# PORT 6233
+# REPLICA2
+nano ~/Downloads/redis-replication/replica2/redis-replica2.conf
+dir /home/dev/redis-replication/replica2
+logfile /home/dev/redis-replication/replica2/redis-replica2.log
+
+
+# Iniciar Servidor - REDIS MASTER
+redis-server /home/dev/Downloads/redis-replication/master/redis-master.conf
+
+# Iniciar Servidor - REDIS REPLICA1
+redis-server /home/dev/Downloads/redis-replication/replica1/redis-replica1.conf
+
+# Iniciar Servidor - REDIS REPLICA2
+redis-server /home/dev/Downloads/redis-replication/replica2/redis-replica2.conf
+
+tail -f /home/dev/Downloads/redis-replication/master/redis-master.log
+
+# CHECAR INFORMAÇÕES DE REPLICAÇÃO NO MASTER
+redis-cli -p 6379
+info replication
