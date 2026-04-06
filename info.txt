@@ -170,7 +170,7 @@ mkdir -p ~/redis-replication/{master,replica1,replica2}
 
 # 6231 MASTER
 # 6232 slave
-# 6233 slave
+# 6333 slave
 
 # MASTER
 nano ~/Downloads/redis-replication/master/redis-master.conf
@@ -178,18 +178,20 @@ nano ~/Downloads/redis-replication/master/redis-master.conf
 port 6231
 dir /home/dev/redis-replication/master
 logfile /home/dev/redis-replication/master/redis-master.log
+# Usar logfile "" para aparecer com o log .conf
 
-# PORT 6232
-# REPLICA1
+# REPLICA1 PORT 6232
 nano ~/Downloads/redis-replication/replica1/redis-replica1.conf
 dir /home/dev/redis-replication/replica1
 logfile /home/dev/redis-replication/replica1/redis-replica1.log
+# Usar logfile "" para aparecer com o log .conf
 
-# PORT 6233
-# REPLICA2
+# REPLICA2 PORT 6333
 nano ~/Downloads/redis-replication/replica2/redis-replica2.conf
 dir /home/dev/redis-replication/replica2
 logfile /home/dev/redis-replication/replica2/redis-replica2.log
+# Usar logfile "" para aparecer com o log .conf
+
 
 
 # Iniciar Servidor - REDIS MASTER
@@ -204,5 +206,61 @@ redis-server /home/dev/Downloads/redis-replication/replica2/redis-replica2.conf
 tail -f /home/dev/Downloads/redis-replication/master/redis-master.log
 
 # CHECAR INFORMAÇÕES DE REPLICAÇÃO NO MASTER
-redis-cli -p 6379
+redis-cli -p 6231
 info replication
+
+
+# REPLICA1
+redis-cli -p 6232
+replicaof 127.0.0.1 6231
+exit
+
+# REPLICA2
+redis-cli -p 6333
+replicaof 127.0.0.1 6231
+exit
+
+
+# MOSTRAR INFOS DAS REPLICAS LISTANDO AS OPÇÕES NO MASTER
+# INSERIR CHAVE NO MASTER
+
+redis-cli -p 6231
+INFO replication
+
+set usuario:123 Bruce
+exit
+
+
+# CHECAR NA REPLICA1 SE A CHAVE ESTÁ DISPONÍVEL
+redis-cli -p 6232
+get usuario:123
+exit
+
+
+# CHECAR NA REPLICA2 SE A CHAVE ESTÁ DISPONÍVEL
+redis-cli -p 6333
+get usuario:123
+exit
+
+
+# ATUALIZAR CHAVE NO MASTER
+redis-cli -p 6231
+set usuario:123 "bruce wayne"
+exit
+
+# CHECAR NA REPLICA1 SE A CHAVE ESTÁ DISPONÍVEL
+redis-cli -p 6232
+get usuario:123
+exit
+
+# CHECAR NA REPLICA2 SE A CHAVE ESTÁ DISPONÍVEL
+redis-cli -p 6333
+get usuario:123
+exit
+
+# OBS:
+# Por padrão, apenas é possivel escrever no master e as réplicas são somente para leitura.
+# Se tentarmos escrever em uma réplica, ocorrerá um erro: (ERROR) READONLY You can't write against a read only replica.
+redis-cli -p 6232
+set usuario:123 "Clark"
+exit
