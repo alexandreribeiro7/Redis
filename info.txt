@@ -361,3 +361,57 @@ cat ~/redis-replication/sentinel3/sentinel3.conf
 redis-cli -p 6231
 SHUTDOWN
 exit
+
+#################################
+# CHECAR OUTPUT/LOGS DOS SENTINELS APÓS O FAILOVER
+#################################
+
+# MASTER MUDOU DO REDIS 6231 PRO REDIS 6233
+# REPLICA 2 SE TORNOU O NOVO MASTER
+# +switch-master mymaster 127.0.0.1 6231 127.0.0.1 6233
+
+# SLAVES 6232/6231 (REPLICAS) APONTAM PARA O NOVO MASTER 6233
+# +slave slave 127.0.0.1:6232 127.0.0.1 6232 @ mymaster 127.0.0.1 6233
+# +slave slave 127.0.0.1:6231 127.0.0.1 6231 @ mymaster 127.0.0.1 6233
+
+
+#################################
+# TESTAR SE AGORA É POSSÍVEL ESCREVER NO NOVO MASTERS
+#################################S
+
+redis-cli -p 6233
+set newuser:12345 "Clark"
+exit
+
+
+#################################
+# CONECTAR EM UMA RÉPLICA
+# TENTAR INSERIR UMA CHAVE (VAU GERAR ERRO)
+# LER A NOVA CHAVE INSERIDA P/ CONFIRMAR QUE A REPLICAÇÃO ESTÁ FUNCIONANDO
+#################################
+
+redis-cli -p 6232
+set newuser:1234567 "Mark"
+get newuser:12345
+exit
+
+
+#################################
+# CHECAR CONFS DOS SENTINELS APÓS FAILOVER
+#################################
+
+cat ~/redis-replication/sentinel1/sentinel1.conf
+cat ~/redis-replication/sentinel2/sentinel2.conf
+cat ~/redis-replication/sentinel3/sentinel3.conf
+
+
+#################################
+# SE INICIARMOS NOVAMENTE O ANTIGO MASTER, ELE VAI AGORA SE TORNAR UMA RÉPLICA (DO NOVO MASTER)
+#################################
+
+# INICIAR SERVIDOR REDIS MASTER
+
+redis-server /home/dev/Downloads/redis-replication/master/redis-master.conf
+tail -f /home/dev/Downloads/redis-replication/master/redis-master.log
+
+# +convert-to-slave slave 127.0.0.1:6231 127.0.0.1 6231 @ mymaster 127.0.0.1 6233
