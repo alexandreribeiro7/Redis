@@ -415,3 +415,98 @@ redis-server /home/dev/Downloads/redis-replication/master/redis-master.conf
 tail -f /home/dev/Downloads/redis-replication/master/redis-master.log
 
 # +convert-to-slave slave 127.0.0.1:6231 127.0.0.1 6231 @ mymaster 127.0.0.1 6233
+
+
+#################################
+# REDIS CLUSTER
+#################################
+
+# cluster-enabled: Rodar no CLUSTER MODE
+
+# cluster-config-file: Define o nome do arquivo onde a configuração deste nó é armazenada, em caso de reinicialização do servidor.
+
+# cluster-node-timeout: número de milissegundos que um nó deve ficar inacessível para ser considerado em estado de falha.
+
+
+# CRIAR PASTAS
+cd
+mkdir ~/Downloads/redis-cluster
+cd ~/Downloads/redis-cluster
+
+# CRIAR Primeiro Arquivo redis.config:
+vi redis-cluster-original.conf
+
+port 7001
+cluster-enabled yes
+cluster-config-file nodes.conf
+cluster-node-timeout 5000
+appendonly yes
+
+
+############################################################
+###### CRIAR 3 "PRIMARY SHARDS" E 3 RÉPLICAS (1 P/ CADA PRIMARY)
+############################################################
+
+# AO FINAL, TEREMOS 6 INSTÂNCIAS DO REDIS (3 PRIMARY / 3 RÉPLICAS)
+# OBS: EM PRODUÇÃO, SEMPRE USE 2 RÉPLICAS P/ CADA PRIMARY, PARA
+# SE PROTEGER CONTRA O "SPLIT BRAIN".
+
+
+###### CRIAR 6 DIRETORIOS PARA CADA ARQUIVO DE CONFIGURAÇÃO E COPIAR O ARQUIVO DE CONFIGURAÇÃO PARA CADA PASTA
+
+clear
+cd ~/Downloads/redis-cluster
+mkdir -p {7001..7006}
+ls -l
+
+for i in {7001..7006}; do 
+  cp ~/Downloads/redis-cluster/redis-cluster-original.conf $i/redis.conf
+done
+for i in {7001..7006}; do print $i; ls -l $i; done
+
+
+###### MUDAR A PORTA EM CADA UM DOS ARQUIVOS DE CONFIGURACAO
+clear
+
+vi ~/Downloads/redis-cluster/7001/redis.conf
+vi ~/Downloads/redis-cluster/7002/redis.conf
+vi ~/Downloads/redis-cluster/7003/redis.conf
+vi ~/Downloads/redis-cluster/7004/redis.conf
+vi ~/Downloads/redis-cluster/7005/redis.conf
+vi ~/Downloads/redis-cluster/7006/redis.conf
+
+
+###### CHECAR SE OS ARQUIVOS FORAM MODIFICADOS CORRETAMENTE
+clear
+
+for i in {7001..7006}; do 
+  printf ~/Downloads/redis-cluster/$i/redis.conf;
+  cat ~/Downloads/redis-cluster/$i/redis.conf;
+done
+
+
+###### INICIALIZAR OS 6 SERVIDORES (1 EM CADA ABA)
+
+# TAB1
+cd ~/Downloads/redis-cluster/7001
+redis-server redis.conf
+
+# TAB2
+cd ~/Downloads/redis-cluster/7002
+redis-server redis.conf
+
+# TAB3
+cd ~/Downloads/redis-cluster/7003
+redis-server redis.conf
+
+# TAB4
+cd ~/Downloads/redis-cluster/7004
+redis-server redis.conf
+
+# TAB5
+cd ~/Downloads/redis-cluster/7005
+redis-server redis.conf
+
+# TAB6
+cd ~/Downloads/redis-cluster/7006
+redis-server redis.conf
