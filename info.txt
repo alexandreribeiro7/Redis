@@ -559,6 +559,89 @@ cluster_state:ok
 redis-cli -p 7001 cluster slots
 
 
-############################################################
-###### 
-############################################################
+
+######
+###############################################################
+#####  ADICIONAR UM NOVO "SHARD" NO CLUSTER
+######
+###############################################################
+
+
+# ESSA É UMA FORMA DE ESCALAR O CLUSTER REDIS:
+# ARQUITETURA PARA ADICIONAR NOVOS SERVIDORES PRIMARY E REPLICAS
+
+
+# INICIAR 2 NOVAS INSTÂNCIAS REDIS: O NOVO PRIMARY E SUA REPLICA
+
+
+# CRIAR AS PASTAS
+# COPIAR OS NOVOS ARQUIVOS DE CONFIGURAÇÃO
+# AJUSTAR A CONFIGURAÇÃO DA PORTA EM CADA ARQUIVO (7006 e 7007)
+
+clear
+
+cd ~/Downloads/redis-cluster
+ls -l
+
+mkdir 7007 7008
+
+cp 7001/redis.conf 7007/redis.conf
+ls 7007/redis.conf
+
+cp 7001/redis.conf 7008/redis.conf
+ls 7008/redis.conf
+
+
+# AJUSTAR A PORTA DOS 2 NOVOS SERVERS
+vi 7007/redis.conf
+vi 7008/redis.conf
+
+
+### INICIALIZAR AS 2 NOVAS INSTÂNCIAS DO REDIS
+
+# NOVA TAB
+
+cd ~/Downloads/redis-cluster/7007
+redis-server redis.conf
+
+# NOVA TAB
+
+cd ~/Downloads/redis-cluster/7008
+redis-server redis.conf
+
+
+
+######
+###############################################################
+#####  ADICIONAR UM NOVO NÓ PRIMARY NO CLUSTER
+######
+###############################################################
+
+
+### PARÂMETROS:
+# PRIMEIRO ESPECIFICAMOS O NOVO SHARD (PRIMARY) E EM SEGUIDA O ENDEREÇO DE QUALQUER OUTRO SHARD DO CLUSTER
+
+
+# NOVA TAB
+
+redis-cli --cluster add-node 127.0.0.1:7007 127.0.0.1:7001
+
+
+######
+###############################################################
+#####  CHECAR AS CONFIGURAÇÕES DO CLUSTER
+######
+###############################################################
+
+
+# Verificar o estado do cluster, use o comando:
+clear
+redis-cli -p 7001 cluster info
+
+
+# Listar os nós e suas funções:
+clear
+redis-cli -p 7001 cluster nodes
+
+### CHECAR AS DISTRIBUIÇÃO DOS HASHSLOTS
+redis-cli -p 7001 cluster slots
