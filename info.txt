@@ -510,3 +510,55 @@ redis-server redis.conf
 # TAB6
 cd ~/Downloads/redis-cluster/7006
 redis-server redis.conf
+
+###### COM AS 6-INSTÂNCIAS, VAMOS INICIALIZÁ-LAS EM UM CLUSTER
+
+# O redis-cli vai propor uma configuração; aceite-a
+# digitando yes.
+
+# O cluster será configurado e as instâncias serão
+# inicializadas para se comunicar umas com as outras.
+
+# --cluster-replicas: Informa quantas REPLICAS cada
+# PRIMARY vai ter
+
+# Você deve ver a seguinte mensagem ao final:
+# [OK] All 16384 slots covered
+
+
+redis-cli \
+--cluster create \
+127.0.0.1:7001 \
+127.0.0.1:7002 \
+127.0.0.1:7003 \
+127.0.0.1:7004 \
+127.0.0.1:7005 \
+127.0.0.1:7006 \
+--cluster-replicas 1
+
+# Como verificar o cluster
+
+# Execute:
+
+redis-cli -c -p 7001
+
+# Depois:
+
+cluster nodes
+
+# ou:
+
+cluster info
+
+# Você deve ver os masters/slaves e o estado:
+
+cluster_state:ok
+
+## CHECAR A DISTRIBUIÇÃO DOS HASHSLOTS
+
+redis-cli -p 7001 cluster slots
+
+
+############################################################
+###### 
+############################################################
