@@ -645,3 +645,93 @@ redis-cli -p 7001 cluster nodes
 
 ### CHECAR AS DISTRIBUIÇÃO DOS HASHSLOTS
 redis-cli -p 7001 cluster slots
+
+
+# ATENÇÃO:
+# AJUSTAR O ID PARA QUE A NOSSA REPLICA (7008)
+# APONTAR P/ O MASTER ID CORRETO (7007 NESTE NOSSO
+# EXEMPLO)!
+
+clear
+redis-cli \
+-p 7001 \
+--cluster add-node 127.0.0.1:7008 127.0.0.1:7001 \
+--cluster-slave --cluster-master-id \
+965fd7fee9440251103d63a741ecb2ce81200bc5
+
+
+# OBS:
+# SE TENTAR ADICIONAR UM NÓ QUE JÁ TENHA SIDO INICIALIZADO, VAI APRESENTAR O ERRO:
+#[ERR] Node 127.0.0.1:7007 is not empty. Either the node already knows other node (check with CLUSTER NODES) or contains some key in database 0,.
+
+
+
+
+######
+###############################################################
+######
+##### FAZER O RESHARD PARA QUE O NOVO PRIMARY
+##### POSSA RECEBER OS HASHSLOTS
+######
+###############################################################
+######
+
+
+# INFORMAR A QTDE DE SLOTS A MOVER:
+# COMO SAO 4 PRIMARY, DIVIDIR: 16384 ÷ 4 = 4096
+
+
+# INFORMAR O ID DO SHARD PRIMÁRIO PARA ONDE
+# QUEREMOS MOVER OS DADOS
+
+
+# INFORMAR O ID DO SHARD DE ONDE QUEREMOS COPIAR
+# OS DADOS (INFORMAR "ALL" E O REDIS VAI MOVER
+# ALGUNS HASHSLOTS DE TODOS OS PRIMARY DISPONÍVEIS)
+
+
+clear
+redis-cli -p 7001 --cluster reshard 127.0.0.1:7001
+# 4096
+# USAR O MESMO ID DA INSTÂNCIA 7007 QUE ANOTAMOS ANTEIORMENTE (Ex: 965fd7fee9440251103d63a741ecb2ce81200bc5 )
+# all
+# yes
+
+
+######
+###############################################################
+######
+##### USANDO O REDIS-CLI COM UM REDIS CLUSTER
+######
+###############################################################
+######
+
+
+# Quando você usa redis-cli para se conectar a um
+# shard de um Redis Cluster, você é conectado
+# somente a esse shard e não pode acessar dados de
+# outros shards!
+
+# Se você tentar acessar chaves do shard errado,
+# você receberá um erro "MOVED".
+
+
+# Há um truque para usar o redis-cli para não ter
+# que abrir conexões para todos os shards, mas em
+# vez disso você deixa que ele faça o trabalho de conectar e reconectar para você.
+
+# É o modo de suporte cluster do redis-cli usando -c:
+# Com isso, quando usarmos o REDIS no modo cluster, se o cliente receber a resposta de erro "MOVED 15495 127.0.0.1:7002" do shard ao qual está conectado, ele simplesmente se reconectará ao endereço retornando na resposta de erro, neste caso "127.0.0.1:7002".
+
+
+### TESTAR CONEXÃO SEM HABILITAR O MODO CLUSTER
+redis-cli -p 7001
+
+get usuario:123
+# (error) MOVED 5859 127.0.0.1:7007
+              HASHSLOTS     Endereço Servidor
+get pagamento:456
+# (error) MOVED 7825 127.0.0.1:7002
+
+get produto:789
+# (error) MOVED 13778 127.0.0.1:7003
