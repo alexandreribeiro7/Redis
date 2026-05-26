@@ -735,3 +735,114 @@ get pagamento:456
 
 get produto:789
 # (error) MOVED 13778 127.0.0.1:7003
+
+
+# SEGURANÇA NO REDIS
+# Comandos Básicos de ACL
+
+# Os principais comandos relacionados a ACLs no Redis são:
+
+# ACL SETUSER: Cria ou modifica um usuário.
+# ACL DELUSER: Remove um usuário.
+# ACL LIST: Lista todos os usuários e suas permissões.
+# ACL SAVE: Salva as configurações de ACL no disco.
+# ACL LOAD: Carrega as configurações de ACL do disco.
+# ACL LOG: Exibe o log de eventos de segurança relacionados a ACL.
+# ACL WHOAMI: Retorna o nome do usuário atual.
+# flushall
+# Criando e Gerenciando Usuários com ACLs
+
+
+# ACL SETUSER bruce on >password ~* +@all
+# clear
+# ACL LIST
+
+# Neste exemplo, estamos criando um usuário chamado bruce:
+
+# on: Habilita o usuário.
+# >password: Define a senha do usuário.
+# ~*: Permite acesso a todas as chaves .
+# +@all: Concede acesso a todos os comandos.
+
+
+# Neste exemplo, estamos criando um usuário chamado Bruce
+# on: Habilita o usuário
+
+>password: define a senha do usuario
+~*: Permite acesso a todas as chaves
++@all: Concede permissão para todos os comandos.
+
+
+
+
+
+Restringindo Permissões
+podemos criar um usuario com permissões mais restritas.
+
+
+Exemplo:
+ACL SETUSER bob on >securepassword ~cache:* +get +set
+clear
+ACL LIST
+
+
+
+Neste exemplo, o usuário bob tem as seguintes permissões:
+- Acesso apenas a chaves que começam com cache:
+- Permissão para executar apenas os comandos GET e SET
+
+
+
+
+
+Listando Usuários e Permissões
+para listar todos os usuários e suas permissões, use o comando ACL LIST
+
+Exemplo:
+clear
+ACL LIST
+
+
+
+Removendo um Usuário
+Para remover um usuario, use o comando ACL DELUSER
+
+ACL DELUSER bruce
+clear
+ACL LIST
+
+ACL DELUSER bob
+clear
+ACL LIST
+
+
+
+
+
+=== Configurando ACLs PARA DIFERENTES CENÁRIOS REPLICAS
+
+Cenario 1: Criar um usuário que só pode executar comandos de leitura, como o GET.
+
+ACL SETUSER readonly on >readonlypassword ~* +get
+clear
+ACL LIST
+
+
+
+
+Cenario 2: Criar um usuário que só pode executar comandos de escritas, como o SET.
+
+ACL SETUSER readonly on >writeonlypassword ~* +set
+clear
+ACL LIST
+
+
+
+
+Cenario 3: Criar um usuário com acesso REstrito a comandos e chaves especificas
+
+ACL SETUSER restricted on >restrictedpassword ~data:* +get +set
+ACL LIST
+
+
+
